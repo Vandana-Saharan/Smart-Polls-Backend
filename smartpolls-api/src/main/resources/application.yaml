@@ -6,9 +6,9 @@ spring:
     name: smartpolls-api
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/smartpolls
-    username: smartpolls
-    password: smartpolls
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
 
   jpa:
     hibernate:
@@ -16,6 +16,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
     open-in-view: false
 
   flyway:
