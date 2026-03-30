@@ -5,7 +5,9 @@ import com.smartpolls.smartpollsapi.dto.PollOptionResponse;
 import com.smartpolls.smartpollsapi.dto.PollResponse;
 import com.smartpolls.smartpollsapi.entity.Poll;
 import com.smartpolls.smartpollsapi.entity.PollOption;
+import com.smartpolls.smartpollsapi.exception.PollOwnershipException;
 import com.smartpolls.smartpollsapi.repository.PollRepository;
+import com.smartpolls.smartpollsapi.security.JwtUserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,14 +24,15 @@ public class PollService {
     private final PollRepository pollRepository;
 
     @Transactional
-    public PollResponse createPoll(CreatePollRequest request) {
+    public PollResponse createPoll(CreatePollRequest request, JwtUserPrincipal principal) {
         UUID pollId = UUID.randomUUID();
 
         Poll poll = new Poll(
                 pollId,
                 request.question(),
                 Instant.now(),
-                null
+                null,
+                principal.userId()
         );
 
         List<PollOption> options = request.options().stream()
@@ -40,7 +43,8 @@ public class PollService {
                 poll.getId(),
                 poll.getQuestion(),
                 poll.getCreatedAt(),
-                options
+                options,
+                poll.getOwnerId()
         );
 
         Poll saved = pollRepository.save(fullPoll);
@@ -58,16 +62,21 @@ public class PollService {
     @Transactional(readOnly = true)
     public PollResponse getPoll(UUID pollId) {
         Poll poll = pollRepository.findById(pollId)
-                .orElseThrow(() -> new NoSuchElementException("POLL_NOT_FOUND"));
+                .orElseThrow(() -> new NoSuchElementException("Poll not found"));
         return toResponse(poll);
     }
 
     @Transactional
-    public void deletePoll(UUID pollId) {
+    public void deletePoll(UUID pollId, JwtUserPrincipal principal) {
         // Will throw if not found – surfaces as 500; controller can handle if needed
-        if (!pollRepository.existsById(pollId)) {
-            throw new NoSuchElementException("POLL_NOT_FOUND");
+        Poll poll = pollRepository.findById(pollId)
+                .orElseThrow(() -> new NoSuchElementException("Poll not found"));
+
+        boolean isOwner = poll.getOwnerId() != null && poll.getOwnerId().equals(principal.userId());
+        if (!isOwner && !principal.isAdmin()) {
+            throw new PollOwnershipException();
         }
+
         pollRepository.deleteById(pollId);
     }
 
@@ -76,6 +85,8 @@ public class PollService {
                 poll.getId(),
                 poll.getQuestion(),
                 poll.getCreatedAt(),
+                poll.getOwnerId(),
+                poll.getOwnerId(),
                 poll.getOptions().stream()
                         .map(o -> new PollOptionResponse(o.getId(), o.getText()))
                         .toList()

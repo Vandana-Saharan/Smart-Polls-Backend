@@ -1,10 +1,16 @@
 package com.smartpolls.smartpollsapi.controller;
 
 import com.smartpolls.smartpollsapi.dto.CreatePollRequest;
+import com.smartpolls.smartpollsapi.dto.MessageResponse;
 import com.smartpolls.smartpollsapi.dto.PollResponse;
+import com.smartpolls.smartpollsapi.exception.UnauthorizedException;
+import com.smartpolls.smartpollsapi.security.JwtUserPrincipal;
 import com.smartpolls.smartpollsapi.service.PollService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,8 +25,12 @@ public class PollController {
     private final PollService pollService;
 
     @PostMapping
-    public PollResponse createPoll(@Valid @RequestBody CreatePollRequest request) {
-        return pollService.createPoll(request);
+    public ResponseEntity<PollResponse> createPoll(
+            @Valid @RequestBody CreatePollRequest request,
+            Authentication authentication
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(pollService.createPoll(request, requirePrincipal(authentication)));
     }
 
     @GetMapping
@@ -34,7 +44,15 @@ public class PollController {
     }
 
     @DeleteMapping("/{pollId}")
-    public void deletePoll(@PathVariable UUID pollId) {
-        pollService.deletePoll(pollId);
+    public MessageResponse deletePoll(@PathVariable UUID pollId, Authentication authentication) {
+        pollService.deletePoll(pollId, requirePrincipal(authentication));
+        return new MessageResponse("Poll deleted successfully");
+    }
+
+    private JwtUserPrincipal requirePrincipal(Authentication authentication) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof JwtUserPrincipal principal)) {
+            throw new UnauthorizedException();
+        }
+        return principal;
     }
 }

@@ -11,9 +11,16 @@ import java.util.TimeZone;
 @SpringBootApplication
 public class SmartpollsApiApplication {
 
+	static {
+		// Spring tests initialize the application context without executing main().
+		System.setProperty("user.timezone", "UTC");
+		TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
+	}
+
 	public static void main(String[] args) {
-		// Use IANA timezone name so PostgreSQL accepts it (rejects legacy "Asia/Calcutta")
-		TimeZone.setDefault(TimeZone.getTimeZone("Asia/Kolkata"));
+		// Force a PostgreSQL-safe timezone before datasource initialization.
+		System.setProperty("user.timezone", "UTC");
+		TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
 		applyRenderDatabaseUrlCompatibility();
 		SpringApplication.run(SmartpollsApiApplication.class, args);
 	}

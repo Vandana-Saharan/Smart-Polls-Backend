@@ -8,6 +8,8 @@ public record PollResponse(
         UUID id,
         String question,
         Instant createdAt,
+        UUID ownerId,
+        UUID createdBy,
         List<PollOptionResponse> options
 ) {
 }

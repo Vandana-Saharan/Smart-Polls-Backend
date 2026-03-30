@@ -1,7 +1,6 @@
 package com.smartpolls.smartpollsapi.service;
 
 import com.smartpolls.smartpollsapi.dto.PollResultsResponse;
-import com.smartpolls.smartpollsapi.dto.VoteRequest;
 import com.smartpolls.smartpollsapi.dto.VoteResponse;
 import com.smartpolls.smartpollsapi.entity.Poll;
 import com.smartpolls.smartpollsapi.entity.PollOption;
@@ -24,21 +23,21 @@ public class VoteService {
     private final VoteRepository voteRepository;
 
     @Transactional
-    public VoteResponse submitVote(UUID pollId, VoteRequest request) {
+    public VoteResponse submitVote(UUID pollId, UUID optionId, String voterId) {
         Poll poll = pollRepository.findById(pollId)
-                .orElseThrow(() -> new NoSuchElementException("POLL_NOT_FOUND"));
+                .orElseThrow(() -> new NoSuchElementException("Poll not found"));
 
         // Ensure option belongs to poll
         boolean validOption = poll.getOptions().stream()
                 .map(PollOption::getId)
-                .anyMatch(id -> id.equals(request.optionId()));
+                .anyMatch(id -> id.equals(optionId));
 
         if (!validOption) {
             return new VoteResponse(false, "INVALID_OPTION");
         }
 
         // Fast pre-check (helps UX, but uniqueness index is final authority)
-        if (voteRepository.existsByPollIdAndVoterId(pollId, request.voterId())) {
+        if (voteRepository.existsByPollIdAndVoterId(pollId, voterId)) {
             return new VoteResponse(false, "ALREADY_VOTED");
         }
 
@@ -46,8 +45,8 @@ public class VoteService {
             Vote vote = new Vote(
                     UUID.randomUUID(),
                     pollId,
-                    request.optionId(),
-                    request.voterId(),
+                    optionId,
+                    voterId,
                     Instant.now()
             );
 
@@ -63,7 +62,7 @@ public class VoteService {
     public PollResultsResponse getResults(UUID pollId) {
         // Ensure poll exists
         pollRepository.findById(pollId)
-                .orElseThrow(() -> new NoSuchElementException("POLL_NOT_FOUND"));
+                .orElseThrow(() -> new NoSuchElementException("Poll not found"));
 
         Map<UUID, Long> votes = new HashMap<>();
         for (Object[] row : voteRepository.countVotesByOption(pollId)) {

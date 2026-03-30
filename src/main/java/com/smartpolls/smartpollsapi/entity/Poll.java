@@ -23,6 +23,9 @@ public class Poll {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "owner_id")
+    private UUID ownerId;
+
     @OneToMany(
             mappedBy = "poll",
             cascade = CascadeType.ALL,
@@ -30,11 +33,12 @@ public class Poll {
     )
     private List<PollOption> options;
 
-    public Poll(UUID id, String question, Instant createdAt, List<PollOption> options) {
+    public Poll(UUID id, String question, Instant createdAt, List<PollOption> options, UUID ownerId) {
         this.id = id;
         this.question = question;
         this.createdAt = createdAt;
         this.options = options;
+        this.ownerId = ownerId;
     }
 
 }

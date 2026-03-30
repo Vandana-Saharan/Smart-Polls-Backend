@@ -6,9 +6,11 @@ spring:
     name: smartpolls-api
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:${DB_URL:${JDBC_DATABASE_URL:}}}
-    username: ${SPRING_DATASOURCE_USERNAME:${DB_USERNAME:}}
-    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:}}
+    # Defaults for local dev (works with docker-compose in this repo).
+    # Override via env vars when deploying.
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/smartpolls}
+    username: ${SPRING_DATASOURCE_USERNAME:smartpolls}
+    password: ${SPRING_DATASOURCE_PASSWORD:smartpolls}
 
   jpa:
     hibernate:
@@ -27,3 +29,10 @@ management:
     web:
       exposure:
         include: health,info
+
+security:
+  jwt:
+    # For local dev only. In production set JWT_SECRET env var.
+    secret: ${JWT_SECRET:dev-only-change-me-to-a-long-secret}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  admin-usernames: ${ADMIN_USERNAMES:admin}
