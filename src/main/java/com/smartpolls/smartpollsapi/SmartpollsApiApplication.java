@@ -37,6 +37,8 @@ public class SmartpollsApiApplication {
 
 		String envSpringUrl = getEnv("SPRING_DATASOURCE_URL");
 		if (hasText(envSpringUrl) && envSpringUrl.startsWith("jdbc:")) {
+			System.setProperty("spring.datasource.url", envSpringUrl);
+			applyCredentialOverrides();
 			return;
 		}
 
@@ -52,6 +54,7 @@ public class SmartpollsApiApplication {
 
 		if (rawUrl.startsWith("jdbc:")) {
 			System.setProperty("spring.datasource.url", rawUrl);
+			applyCredentialOverrides();
 			return;
 		}
 
@@ -73,7 +76,6 @@ public class SmartpollsApiApplication {
 		}
 		System.setProperty("spring.datasource.url", jdbcUrl);
 
-		// If username/password were not provided separately, extract from URL and set them.
 		String userInfo = uri.getUserInfo();
 		if (hasText(userInfo) && shouldDeriveCredentialsFromUrl()) {
 			int idx = userInfo.indexOf(':');
@@ -90,13 +92,43 @@ public class SmartpollsApiApplication {
 				System.setProperty("spring.datasource.password", pass);
 			}
 		}
+
+		applyCredentialOverrides();
 	}
 
 	private static boolean shouldDeriveCredentialsFromUrl() {
 		return !hasText(getEnv("SPRING_DATASOURCE_USERNAME"))
 				&& !hasText(getEnv("SPRING_DATASOURCE_PASSWORD"))
 				&& !hasText(getEnv("DB_USERNAME"))
-				&& !hasText(getEnv("DB_PASSWORD"));
+				&& !hasText(getEnv("DB_PASSWORD"))
+				&& !hasText(getEnv("POSTGRES_USER"))
+				&& !hasText(getEnv("POSTGRES_PASSWORD"))
+				&& !hasText(getEnv("PGUSER"))
+				&& !hasText(getEnv("PGPASSWORD"));
+	}
+
+	private static void applyCredentialOverrides() {
+		String username = firstNonBlank(
+				System.getProperty("spring.datasource.username"),
+				getEnv("SPRING_DATASOURCE_USERNAME"),
+				getEnv("DB_USERNAME"),
+				getEnv("POSTGRES_USER"),
+				getEnv("PGUSER")
+		);
+		String password = firstNonBlank(
+				System.getProperty("spring.datasource.password"),
+				getEnv("SPRING_DATASOURCE_PASSWORD"),
+				getEnv("DB_PASSWORD"),
+				getEnv("POSTGRES_PASSWORD"),
+				getEnv("PGPASSWORD")
+		);
+
+		if (hasText(username)) {
+			System.setProperty("spring.datasource.username", username);
+		}
+		if (hasText(password)) {
+			System.setProperty("spring.datasource.password", password);
+		}
 	}
 
 	private static String getEnv(String key) {

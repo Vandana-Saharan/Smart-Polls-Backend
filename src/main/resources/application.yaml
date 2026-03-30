@@ -8,9 +8,9 @@ spring:
   datasource:
     # Defaults for local dev (works with docker-compose in this repo).
     # Override via env vars when deploying.
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/smartpolls}
-    username: ${SPRING_DATASOURCE_USERNAME:smartpolls}
-    password: ${SPRING_DATASOURCE_PASSWORD:smartpolls}
+    url: ${SPRING_DATASOURCE_URL:${JDBC_DATABASE_URL:${DB_URL:jdbc:postgresql://localhost:5432/smartpolls}}}
+    username: ${SPRING_DATASOURCE_USERNAME:${DB_USERNAME:${POSTGRES_USER:${PGUSER:smartpolls}}}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:${POSTGRES_PASSWORD:${PGPASSWORD:smartpolls}}}}
 
   jpa:
     hibernate:
